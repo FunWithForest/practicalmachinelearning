@@ -1,28 +1,171 @@
 ---
-title: "Practical Machine Learning Course Project"
-output: html_document
+title: "PracticalML_PA"
+author: "Stefan Schmidt"
+date: "11 November 2017"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
+#install.packages("knitr")
 knitr::opts_chunk$set(echo = TRUE)
 ```
+### Coursera Practical Machine Learning Course:
 
-## R Markdown
+Practical Machine Learning:
+The training data for this project are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The test data are available here:
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+This dataset is licensed under the Creative Commons license (CC BY-SA).
 
-```{r cars}
-summary(cars)
+First the Working Directory is set to J. The csv-files are then loaded into the workspace.
+Via Ultraedit the files were checked to have comma separation, a header and character values are in "".
+
+```{r Data}
+
+setwd("F:/Files/Programming/Coursera_Practical Machine Learning")
+
+test <- read.csv("pml-testing.csv", sep = ",", header = TRUE, stringsAsFactors = TRUE)
+train <- read.csv("pml-training.csv", sep = ",", header = TRUE, stringsAsFactors = TRUE)
+
+#str(test)
+#str(train)
+
+#train$classe <- as.factor(train$classe)
+summary(train$classe)
+#   A    B    C    D    E 
+#5580 3797 3422 3216 3607
+summary(train$user_name)
+
+#There are 160 variables with 20 observations in the test data and 19622 observations in the training data.
+#The feature X seems to be the ID.
+#After converting to a factor the user_name lists six people.
+#cvtd_timestamp has many redundant listings so the conversion as a factor is useful as well.
+#In the training data is the classification of the exercise in the feature "classe", varying from A to E.
+
+any(is.na(train)) #True, this means there are missing values in the training dataset.
+head(apply(train, 2, function(x) any(is.na(x))))#Test for the function
+columns <- as.data.frame(apply(train, 2, function(x) any(is.na(x)))) #write column names in a vector
+colnames(columns) <- c("case1") #Rename the feature
+rown1 <- rownames(columns) #Copy rownames to a vector
+columns$name <- rown1
+rownames(columns) <- NULL #Set existing rownames to zero / erase rownames
+train_filtered <- Filter(function(x) !any(is.na(x)), train) 
+#Filter all columns that have at least one missing value
+
+set.seed(123) #Set a recreatable random factor
+index <- sample(1:nrow(train_filtered), 250) #Create an index with 250 sample ids
+rm(rown1, train)
+#The feature X seems to be an index number and therefore will be removed
+train_filtered$X <- NULL
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r Machine Learning 1st try}
+#install.packages("caret")
+library(caret)
+#install.packages("parallelMap")
+library(parallelMap)
+#parallelStart(mode = "socket", cpus = 3)
+#model <- train(classe ~., data = train_filtered[index, ], method = "rf")
+#The initial test runs too slow, even when executed in parallel mode and choosing only 250 samples.
+#Tuning the parameters of the random forest a good approach to deal with this problem:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+#fitControl <- trainControl(method = "cv", number = 5, allowParallel = TRUE)
+#model <- train(classe ~., data = train_filtered[index, ], method = "rf", ntree = 250, 
+#               trainControl = fitControl)
+#parallelStop()
+#gc()
+#Now the process is running but it uses too few training samples so further conversions 
+#have to be made and a new ML chunk has to be created
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r Further Data Wrangling}
+
+test_reduced <- test[,which(colnames(test) %in% colnames(train_filtered))]
+#test_filtered may only consist of columns that are into train_filtered
+#test_reduced gets every but one column and that is the classe feature that has to be predicted
+#Unfortunately the formats do not match everywhere
+
+any(is.na(test_reduced))
+#Inspecting the test data NA-values can be seen. They have to be replaced
+#pred <- predict(model, newdata = test_reduced, na.action = na.roughfix)
+#Error: replacement has length zero
+
+NaTestCol <- as.character(colnames(test_reduced[
+             which(apply(test_reduced, 2, function(x) (anyNA(x)) == TRUE))]))
+
+#train_filtered2 <- train_filtered[,!which(colnames(train_filtered) %in% colnames(test_reduced[
+#            which(apply(test_reduced, 2, function(x) (anyNA(x)) == TRUE))]))] #Error, does not resolve
+
+train_filtered <- train_filtered[,!(colnames(train_filtered) %in% colnames(test_reduced[
+             which(apply(test_reduced, 2, function(x) (anyNA(x)) == TRUE))]))]
+#Erase any column from train that had missing values in test
+#Now there are 59 variables left
+```
+
+```{r Machine Learning 2nd try}
+
+inTrain <- createDataPartition(y=train_filtered$classe, p= 0.75, list = FALSE)
+#Create a partition of 75 / 25 percent
+
+training <- train_filtered[inTrain,]
+testing <- train_filtered[-inTrain,]
+
+parallelStart(mode = "socket", cpus = 3)
+fitControl <- trainControl(method = "cv", number = 5, allowParallel = TRUE)
+
+model <- train(classe ~., data = training, method = "rf", ntree = 250, 
+               trainControl = fitControl)
+#Use 75 percent of the training data tp fit the model
+
+pred <- predict(model, newdata = testing)
+#Predict on the 20 obs. of the testing data
+
+confusionMatrix(pred, reference = testing$classe)
+#The accuracy is at 99.86 percent
+
+parallelStop()
+gc()
+save.image("Coursera_PML.RData")
+
+```
+Confusion Matrix and Statistics
+
+          Reference
+Prediction    A    B    C    D    E
+         A 1395    1    0    0    0
+         B    0  944    0    0    0
+         C    0    4  855    0    0
+         D    0    0    0  803    1
+         E    0    0    0    1  900
+
+Overall Statistics
+                                          
+               Accuracy : 0.9986          
+                 95% CI : (0.9971, 0.9994)
+    No Information Rate : 0.2845          
+    P-Value [Acc > NIR] : < 2.2e-16       
+                                          
+                  Kappa : 0.9982          
+ Mcnemar's Test P-Value : NA              
+
+Statistics by Class:
+
+                     Class: A Class: B Class: C Class: D Class: E
+Sensitivity            1.0000   0.9947   1.0000   0.9988   0.9989
+Specificity            0.9997   1.0000   0.9990   0.9998   0.9998
+Pos Pred Value         0.9993   1.0000   0.9953   0.9988   0.9989
+Neg Pred Value         1.0000   0.9987   1.0000   0.9998   0.9998
+Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
+Detection Rate         0.2845   0.1925   0.1743   0.1637   0.1835
+Detection Prevalence   0.2847   0.1925   0.1752   0.1639   0.1837
+Balanced Accuracy      0.9999   0.9974   0.9995   0.9993   0.9993
+
+```{r Further inspections}
+load(("Coursera_PML.RData"))
+```
