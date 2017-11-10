@@ -234,7 +234,7 @@ model &lt;- train(classe ~., data = training, method = &quot;rf&quot;, ntree = 2
 <pre class="r"><code>#Use 75 percent of the training data tp fit the model
 
 pred &lt;- predict(model, newdata = testing)
-#Predict on the 20 obs. of the testing data
+#Predict on the remaining obs
 
 confusionMatrix(pred, reference = testing$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -274,8 +274,8 @@ parallelStop()</code></pre>
 <pre><code>## Stopped parallelization. All cleaned up.</code></pre>
 <pre class="r"><code>gc()</code></pre>
 <pre><code>##           used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells 2056281 109.9    3205452 171.2  2637877 140.9
-## Vcells 5850216  44.7   48027667 366.5 61052802 465.8</code></pre>
+## Ncells 2056283 109.9    3205452 171.2  2637877 140.9
+## Vcells 5850239  44.7   48027689 366.5 61052825 465.8</code></pre>
 <pre class="r"><code>save.image(&quot;Coursera_PML.RData&quot;)</code></pre>
 <p>Confusion Matrix and Statistics</p>
 <pre><code>      Reference</code></pre>
@@ -291,7 +291,12 @@ P-Value [Acc &gt; NIR] : &lt; 2.2e-16
 <p>Statistics by Class:</p>
 <pre><code>                 Class: A Class: B Class: C Class: D Class: E</code></pre>
 <p>Sensitivity 1.0000 0.9947 1.0000 0.9988 0.9989 Specificity 0.9997 1.0000 0.9990 0.9998 0.9998 Pos Pred Value 0.9993 1.0000 0.9953 0.9988 0.9989 Neg Pred Value 1.0000 0.9987 1.0000 0.9998 0.9998 Prevalence 0.2845 0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2845 0.1925 0.1743 0.1637 0.1835 Detection Prevalence 0.2847 0.1925 0.1752 0.1639 0.1837 Balanced Accuracy 0.9999 0.9974 0.9995 0.9993 0.9993</p>
-<pre class="r"><code>load((&quot;Coursera_PML.RData&quot;))</code></pre>
+<pre class="r"><code>load((&quot;Coursera_PML.RData&quot;))
+pred &lt;- predict(model, newdata = test_reduced)
+#Predict on the 20 obs. of the testing data
+pred</code></pre>
+<pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
+## Levels: A B C D E</code></pre>
 </div>
 
 

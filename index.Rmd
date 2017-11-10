@@ -124,7 +124,7 @@ model <- train(classe ~., data = training, method = "rf", ntree = 250,
 #Use 75 percent of the training data tp fit the model
 
 pred <- predict(model, newdata = testing)
-#Predict on the 20 obs. of the testing data
+#Predict on the remaining obs
 
 confusionMatrix(pred, reference = testing$classe)
 #The accuracy is at 99.86 percent
@@ -168,4 +168,8 @@ Balanced Accuracy      0.9999   0.9974   0.9995   0.9993   0.9993
 
 ```{r Further inspections}
 load(("Coursera_PML.RData"))
+pred <- predict(model, newdata = test_reduced)
+#Predict on the 20 obs. of the testing data
+pred
+
 ```
