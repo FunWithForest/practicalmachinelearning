@@ -1,7 +1,7 @@
 ---
 title: "PracticalML_PA"
 author: "Stefan Schmidt"
-date: "11 November 2017"
+date: "10 November 2017"
 output:
   html_document: default
   pdf_document: default
@@ -22,23 +22,20 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 
 This dataset is licensed under the Creative Commons license (CC BY-SA).
 
-First the Working Directory is set to J. The csv-files are then loaded into the workspace.
-Via Ultraedit the files were checked to have comma separation, a header and character values are in "".
+First the Working Directory is set to the local folder where the data is stored. 
+The csv-files are then loaded into the workspace.
+Via Ultraedit the files were checked to have comma separation, 
+a header and character values are in double quotes ("").
 
 ```{r Data}
 
-setwd("F:/Files/Programming/Coursera_Practical Machine Learning")
-
+setwd("F:/Files/Programming/Coursera_Practical Machine Learning/practicalmachinelearning")
 test <- read.csv("pml-testing.csv", sep = ",", header = TRUE, stringsAsFactors = TRUE)
 train <- read.csv("pml-training.csv", sep = ",", header = TRUE, stringsAsFactors = TRUE)
 
 #str(test)
 #str(train)
-
-#train$classe <- as.factor(train$classe)
 summary(train$classe)
-#   A    B    C    D    E 
-#5580 3797 3422 3216 3607
 summary(train$user_name)
 
 #There are 160 variables with 20 observations in the test data and 19622 observations in the training data.
@@ -79,10 +76,11 @@ library(parallelMap)
 #model <- train(classe ~., data = train_filtered[index, ], method = "rf", ntree = 250, 
 #               trainControl = fitControl)
 #parallelStop()
-#gc()
-#Now the process is running but it uses too few training samples so further conversions 
-#have to be made and a new ML chunk has to be created
+#gc() #Let the garbage collector take care of the used space
 ```
+
+Now the process is running but it uses too few training samples so further conversions 
+have to be made and a new ML chunk has to be created
 
 ```{r Further Data Wrangling}
 
@@ -104,8 +102,7 @@ NaTestCol <- as.character(colnames(test_reduced[
 
 train_filtered <- train_filtered[,!(colnames(train_filtered) %in% colnames(test_reduced[
              which(apply(test_reduced, 2, function(x) (anyNA(x)) == TRUE))]))]
-#Erase any column from train that had missing values in test
-#Now there are 59 variables left
+#Erase any column from train that had missing values in test. Now there are 59 variables left
 ```
 
 ```{r Machine Learning 2nd try}
@@ -132,8 +129,8 @@ confusionMatrix(pred, reference = testing$classe)
 parallelStop()
 gc()
 save.image("Coursera_PML.RData")
-
 ```
+
 Confusion Matrix and Statistics
 
           Reference
@@ -167,9 +164,8 @@ Detection Prevalence   0.2847   0.1925   0.1752   0.1639   0.1837
 Balanced Accuracy      0.9999   0.9974   0.9995   0.9993   0.9993
 
 ```{r Further inspections}
+#For the final evaluation the prediction is done on the 20 unlabeled samples
 load(("Coursera_PML.RData"))
 pred <- predict(model, newdata = test_reduced)
-#Predict on the 20 obs. of the testing data
 pred
-
 ```

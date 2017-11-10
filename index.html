@@ -11,7 +11,7 @@
 
 <meta name="author" content="Stefan Schmidt" />
 
-<meta name="date" content="2017-11-11" />
+<meta name="date" content="2017-11-10" />
 
 <title>PracticalML_PA</title>
 
@@ -119,7 +119,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">PracticalML_PA</h1>
 <h4 class="author"><em>Stefan Schmidt</em></h4>
-<h4 class="date"><em>11 November 2017</em></h4>
+<h4 class="date"><em>10 November 2017</em></h4>
 
 </div>
 
@@ -129,22 +129,17 @@ $(document).ready(function () {
 <p>Practical Machine Learning: The training data for this project are available here: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv" class="uri">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a></p>
 <p>The test data are available here: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv" class="uri">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a></p>
 <p>This dataset is licensed under the Creative Commons license (CC BY-SA).</p>
-<p>First the Working Directory is set to J. The csv-files are then loaded into the workspace. Via Ultraedit the files were checked to have comma separation, a header and character values are in “”.</p>
-<pre class="r"><code>setwd(&quot;F:/Files/Programming/Coursera_Practical Machine Learning&quot;)
-
+<p>First the Working Directory is set to the local folder where the data is stored. The csv-files are then loaded into the workspace. Via Ultraedit the files were checked to have comma separation, a header and character values are in double quotes (“”).</p>
+<pre class="r"><code>setwd(&quot;F:/Files/Programming/Coursera_Practical Machine Learning/practicalmachinelearning&quot;)
 test &lt;- read.csv(&quot;pml-testing.csv&quot;, sep = &quot;,&quot;, header = TRUE, stringsAsFactors = TRUE)
 train &lt;- read.csv(&quot;pml-training.csv&quot;, sep = &quot;,&quot;, header = TRUE, stringsAsFactors = TRUE)
 
 #str(test)
 #str(train)
-
-#train$classe &lt;- as.factor(train$classe)
 summary(train$classe)</code></pre>
 <pre><code>##    A    B    C    D    E 
 ## 5580 3797 3422 3216 3607</code></pre>
-<pre class="r"><code>#   A    B    C    D    E 
-#5580 3797 3422 3216 3607
-summary(train$user_name)</code></pre>
+<pre class="r"><code>summary(train$user_name)</code></pre>
 <pre><code>##   adelmo carlitos  charles   eurico   jeremy    pedro 
 ##     3892     3112     3536     3070     3402     2610</code></pre>
 <pre class="r"><code>#There are 160 variables with 20 observations in the test data and 19622 observations in the training data.
@@ -188,9 +183,8 @@ library(parallelMap)
 #model &lt;- train(classe ~., data = train_filtered[index, ], method = &quot;rf&quot;, ntree = 250, 
 #               trainControl = fitControl)
 #parallelStop()
-#gc()
-#Now the process is running but it uses too few training samples so further conversions 
-#have to be made and a new ML chunk has to be created</code></pre>
+#gc() #Let the garbage collector take care of the used space</code></pre>
+<p>Now the process is running but it uses too few training samples so further conversions have to be made and a new ML chunk has to be created</p>
 <pre class="r"><code>test_reduced &lt;- test[,which(colnames(test) %in% colnames(train_filtered))]
 #test_filtered may only consist of columns that are into train_filtered
 #test_reduced gets every but one column and that is the classe feature that has to be predicted
@@ -210,8 +204,7 @@ NaTestCol &lt;- as.character(colnames(test_reduced[
 
 train_filtered &lt;- train_filtered[,!(colnames(train_filtered) %in% colnames(test_reduced[
              which(apply(test_reduced, 2, function(x) (anyNA(x)) == TRUE))]))]
-#Erase any column from train that had missing values in test
-#Now there are 59 variables left</code></pre>
+#Erase any column from train that had missing values in test. Now there are 59 variables left</code></pre>
 <pre class="r"><code>inTrain &lt;- createDataPartition(y=train_filtered$classe, p= 0.75, list = FALSE)
 #Create a partition of 75 / 25 percent
 
@@ -274,8 +267,8 @@ parallelStop()</code></pre>
 <pre><code>## Stopped parallelization. All cleaned up.</code></pre>
 <pre class="r"><code>gc()</code></pre>
 <pre><code>##           used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells 2056283 109.9    3205452 171.2  2637877 140.9
-## Vcells 5850239  44.7   48027689 366.5 61052825 465.8</code></pre>
+## Ncells 2056029 109.9    3205452 171.2  2637877 140.9
+## Vcells 5849616  44.7   48027091 366.5 61250838 467.4</code></pre>
 <pre class="r"><code>save.image(&quot;Coursera_PML.RData&quot;)</code></pre>
 <p>Confusion Matrix and Statistics</p>
 <pre><code>      Reference</code></pre>
@@ -291,9 +284,9 @@ P-Value [Acc &gt; NIR] : &lt; 2.2e-16
 <p>Statistics by Class:</p>
 <pre><code>                 Class: A Class: B Class: C Class: D Class: E</code></pre>
 <p>Sensitivity 1.0000 0.9947 1.0000 0.9988 0.9989 Specificity 0.9997 1.0000 0.9990 0.9998 0.9998 Pos Pred Value 0.9993 1.0000 0.9953 0.9988 0.9989 Neg Pred Value 1.0000 0.9987 1.0000 0.9998 0.9998 Prevalence 0.2845 0.1935 0.1743 0.1639 0.1837 Detection Rate 0.2845 0.1925 0.1743 0.1637 0.1835 Detection Prevalence 0.2847 0.1925 0.1752 0.1639 0.1837 Balanced Accuracy 0.9999 0.9974 0.9995 0.9993 0.9993</p>
-<pre class="r"><code>load((&quot;Coursera_PML.RData&quot;))
+<pre class="r"><code>#For the final evaluation the prediction is done on the 20 unlabeled samples
+load((&quot;Coursera_PML.RData&quot;))
 pred &lt;- predict(model, newdata = test_reduced)
-#Predict on the 20 obs. of the testing data
 pred</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
